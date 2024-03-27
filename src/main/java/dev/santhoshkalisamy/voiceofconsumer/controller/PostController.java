@@ -1,10 +1,8 @@
 package dev.santhoshkalisamy.voiceofconsumer.controller;
 
-import dev.santhoshkalisamy.voiceofconsumer.entity.GetPostResponse;
-import dev.santhoshkalisamy.voiceofconsumer.entity.Post;
-import dev.santhoshkalisamy.voiceofconsumer.entity.Reaction;
-import dev.santhoshkalisamy.voiceofconsumer.entity.ReactionRequest;
+import dev.santhoshkalisamy.voiceofconsumer.entity.*;
 import dev.santhoshkalisamy.voiceofconsumer.exception.PostNotFoundException;
+import dev.santhoshkalisamy.voiceofconsumer.service.CommentService;
 import dev.santhoshkalisamy.voiceofconsumer.service.PostService;
 import dev.santhoshkalisamy.voiceofconsumer.service.ReactionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +24,9 @@ public class PostController {
 
     @Autowired
     private PostService postService;
+
+    @Autowired
+    private CommentService commentService;
 
     @PostMapping()
     public ResponseEntity<Post> addPost(@RequestBody Post post) {
@@ -83,6 +84,22 @@ public class PostController {
             return ResponseEntity.status(401).build();
         }
         return ResponseEntity.status(201).body(reactionService.reactToPost(reactionRequest.reactionType(), reactionRequest.postId(), authentication.getName()));
+    }
+
+    @PostMapping("/{id}/comment")
+    public ResponseEntity<Comment> addComment(@PathVariable String id, @RequestBody Comment comment) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        comment.setPostId(id);
+        comment.setUserId(authentication.getName());
+        return ResponseEntity.status(201).body(commentService.addComment(comment));
+    }
+
+    @GetMapping("/{id}/comment")
+    public ResponseEntity<List<CommentDTO>> getComments(@PathVariable String id) {
+        return ResponseEntity.status(201).body(commentService.getComments(id));
     }
 
 }

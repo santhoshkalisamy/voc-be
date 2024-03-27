@@ -1,5 +1,6 @@
 package dev.santhoshkalisamy.voiceofconsumer.service;
 
+import dev.santhoshkalisamy.voiceofconsumer.entity.Comment;
 import dev.santhoshkalisamy.voiceofconsumer.entity.GetPostResponse;
 import dev.santhoshkalisamy.voiceofconsumer.entity.Post;
 import dev.santhoshkalisamy.voiceofconsumer.exception.PostNotFoundException;
