@@ -8,6 +8,10 @@ import dev.santhoshkalisamy.voiceofconsumer.exception.PostNotFoundException;
 import dev.santhoshkalisamy.voiceofconsumer.service.PostService;
 import dev.santhoshkalisamy.voiceofconsumer.service.ReactionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,11 +28,16 @@ public class PostController {
     private PostService postService;
 
     @PostMapping()
-    public Post addPost(@RequestBody Post post, @RequestHeader("Authorization") String token) {
-        post.setUserId(token);
+    public ResponseEntity<Post> addPost(@RequestBody Post post) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        post.setUserId(authentication.getName());
+        post.setUserName(((Jwt)authentication.getPrincipal()).getClaims().get("name").toString());
         post.setLikeCount(0);
         post.setCommentCount(0);
-        return postService.addPost(post);
+        return ResponseEntity.status(201).body(postService.addPost(post));
     }
 
     @GetMapping("/search")
@@ -41,14 +50,39 @@ public class PostController {
         return postService.getPost(id);
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deletePost(@PathVariable String id) throws PostNotFoundException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        return postService.deletePost(id, authentication.getName());
+    }
+
+    @GetMapping("/all")
+    public GetPostResponse getAllPosts(@RequestParam int pageSize,
+                                       @RequestParam int pageNumber,
+                                       @RequestParam String search,
+                                       @RequestParam List<String> categories,
+                                       @RequestParam List<String> tags
+                                       ) throws PostNotFoundException {
+        return postService.getAllPosts(pageSize, pageNumber, search, categories, tags);
+    }
+
     @GetMapping()
-    public GetPostResponse getAllPosts(@RequestParam int pageSize, @RequestParam int pageNumber) throws PostNotFoundException {
+    public GetPostResponse getAllPosts(@RequestParam int pageSize,
+                                       @RequestParam int pageNumber
+    ) throws PostNotFoundException {
         return postService.getAllPosts(pageSize, pageNumber);
     }
 
     @PostMapping("/reaction")
-    public Reaction reactToPost(@RequestBody ReactionRequest reactionRequest, @RequestHeader("Authorization") String token) throws PostNotFoundException {
-        return reactionService.reactToPost(reactionRequest.reactionType(), reactionRequest.postId(), token);
+    public ResponseEntity<Reaction> reactToPost(@RequestBody ReactionRequest reactionRequest) throws PostNotFoundException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.status(201).body(reactionService.reactToPost(reactionRequest.reactionType(), reactionRequest.postId(), authentication.getName()));
     }
 
 }

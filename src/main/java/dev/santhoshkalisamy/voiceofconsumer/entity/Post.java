@@ -16,6 +16,7 @@ public class Post {
     private String content;
     private Category category;
     private String userId;
+    private String userName;
     private Date createdAt;
     private Date updatedAt;
     private int likeCount;
@@ -109,5 +110,13 @@ public class Post {
 
     public void setTags(List<String> tags) {
         this.tags = tags;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
     }
 }

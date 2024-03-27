@@ -16,13 +16,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.MongoConverter;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-
-import static com.mongodb.client.model.Aggregates.search;
-import static org.springframework.data.mongodb.core.aggregation.Aggregation.group;
-import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
+import java.sql.Date;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PostServiceImpl implements PostService {
@@ -38,7 +39,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public Post addPost(Post post) {
-        Date date = new Date();
+        Date date = new Date(System.currentTimeMillis());
         post.setCreatedAt(date);
         post.setUpdatedAt(date);
         return postRepository.save(post);
@@ -47,7 +48,7 @@ public class PostServiceImpl implements PostService {
     @Override
     public Post getPost(String id) throws PostNotFoundException {
         Optional<Post> post = postRepository.findById(id);
-        if(post.isEmpty()) {
+        if (post.isEmpty()) {
             throw new PostNotFoundException();
         }
         return post.get();
@@ -64,6 +65,25 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public GetPostResponse getAllPosts(int pageSize,
+                                       int pageNumber,
+                                       String search,
+                                       List<String> categories,
+                                       List<String> tags) throws PostNotFoundException {
+        int count = postRepository.findAll().size();
+        if (categories.isEmpty()) {
+            categories = Arrays.asList("MISC", "COMPLAINT", "FEEDBACK", "REVIEW");
+        }
+        List<Post> posts = new ArrayList<>();
+        if (tags.isEmpty()) {
+            posts = postRepository.findByQuery(search, categories);
+        } else {
+            posts = postRepository.findByQuery(search, categories, tags);
+        }
+        return new GetPostResponse(count, posts);
+    }
+
+    @Override
     public List<Post> searchPosts(String query) {
         List<Post> posts = new ArrayList<>();
         MongoDatabase database = mongoTemplate.getDb();
@@ -71,7 +91,7 @@ public class PostServiceImpl implements PostService {
         AggregateIterable<Document> result = collection.aggregate(Arrays.asList(new Document("$search",
                         new Document("index", "default")
                                 .append("wildcard",
-                                        new Document("query", "*"+query+"*")
+                                        new Document("query", "*" + query + "*")
                                                 .append("path", Arrays.asList("tags", "content"))
                                                 .append("allowAnalyzedField", true))),
                 new Document("$sort",
@@ -82,5 +102,18 @@ public class PostServiceImpl implements PostService {
             posts.add(mongoConverter.read(Post.class, document));
         }
         return posts;
+    }
+
+    @Override
+    public ResponseEntity<String> deletePost(String id, String userId) throws PostNotFoundException {
+        Post post = postRepository.findById(id).orElse(null);
+        if(post == null) {
+            throw new PostNotFoundException();
+        }
+        if(!post.getUserId().equals(userId)) {
+            return ResponseEntity.status(401).build();
+        }
+        postRepository.deleteById(id);
+        return ResponseEntity.status(200).body("Success");
     }
 }
