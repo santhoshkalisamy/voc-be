@@ -11,24 +11,10 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.web.SecurityFilterChain;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
-
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
-    /*@Bean
-    public SecurityFilterChain configure(HttpSecurity http) throws Exception {
-        http
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.GET, "/post/**").permitAll()
-                        .anyRequest().authenticated()
-                ).oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
-                        .decoder(jwtDecoder2())
-                ));
-        return http.build();
-    }
-*/
+
     @Bean
     public JwtDecoder jwtDecoder2() {
         return JwtDecoders.fromIssuerLocation("https://compiledbinary.us.auth0.com/");
