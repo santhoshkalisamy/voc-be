@@ -93,7 +93,7 @@ public class PostServiceImpl implements PostService {
                         new Document("index", "default")
                                 .append("wildcard",
                                         new Document("query", "*" + query + "*")
-                                                .append("path", Arrays.asList("tags", "content"))
+                                                .append("path", Arrays.asList("tags", "content","title"))
                                                 .append("allowAnalyzedField", true))),
                 new Document("$sort",
                         new Document("content", 1L)),
